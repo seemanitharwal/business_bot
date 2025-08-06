@@ -58,6 +58,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({
         return '📝';
       case 'txt':
         return '📋';
+      case 'xlsx':
+        return '📊';
+      case 'xls':
+        return '📊';
       default:
         return '📄';
     }
@@ -124,7 +128,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                 Document Types
               </label>
               <div className="flex gap-2">
-                {['pdf', 'docx', 'txt'].map((type) => (
+                {['pdf', 'docx', 'txt', 'xlsx', 'xls'].map((type) => (
                   <button
                     key={type}
                     onClick={() => toggleType(type)}

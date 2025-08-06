@@ -449,7 +449,16 @@ Consider:
         
         context = ""
         for doc in documents:
-            context += f"\n- {doc.title}: {doc.content[:300]}..."
+            # Handle Excel documents differently to preserve structure
+            if doc.document_type in ["xlsx", "xls"]:
+                # For Excel, show more structured preview
+                preview = doc.content[:500]
+                if "WORKSHEET" in preview:
+                    context += f"\n- {doc.title} (Excel): {preview}..."
+                else:
+                    context += f"\n- {doc.title} (Excel): {doc.content[:300]}..."
+            else:
+                context += f"\n- {doc.title}: {doc.content[:300]}..."
         return context
     
     def _get_max_tokens(self, response_length: str) -> int:

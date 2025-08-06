@@ -130,8 +130,14 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   };
 
   const isValidFileType = (file: File) => {
-    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
-    const validExtensions = ['.pdf', '.docx', '.txt'];
+    const validTypes = [
+      'application/pdf', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+      'text/plain',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    const validExtensions = ['.pdf', '.docx', '.txt', '.xlsx', '.xls'];
     
     console.log('File validation:', {
       fileName: file.name,
@@ -168,6 +174,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     if (fileName.toLowerCase().endsWith('.pdf')) return '📄';
     if (fileName.toLowerCase().endsWith('.docx')) return '📝';
     if (fileName.toLowerCase().endsWith('.txt')) return '📋';
+    if (fileName.toLowerCase().endsWith('.xlsx')) return '📊';
+    if (fileName.toLowerCase().endsWith('.xls')) return '📊';
     return '📄';
   };
 
@@ -215,11 +223,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                   Drop your document here, or click to browse
                 </p>
                 <p className="text-sm text-gray-600 mb-4">
-                  Supports PDF, DOCX, and TXT files up to 10MB
+                  Supports PDF, DOCX, TXT, and Excel files up to 10MB
                 </p>
                 <input
                   type="file"
-                  accept=".pdf,.docx,.txt"
+                  accept=".pdf,.docx,.txt,.xlsx,.xls"
                   onChange={handleFileSelect}
                   className="hidden"
                   id="file-upload"
@@ -353,7 +361,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
                 <h4 className="text-sm font-medium text-blue-900 mb-1">Document Processing</h4>
                 <ul className="text-xs text-blue-800 space-y-1">
                   <li>• Text will be extracted and processed for AI search</li>
-                  <li>• Document will be split into chunks for better retrieval</li>
+                  <li>• Document will be split into logical chunks for better retrieval</li>
+                  <li>• Excel files: Each worksheet is processed separately with table structure preserved</li>
                   <li>• Vector embeddings will be generated for semantic search</li>
                   <li>• Processing may take a few moments for large documents</li>
                 </ul>

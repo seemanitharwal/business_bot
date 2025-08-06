@@ -84,6 +84,10 @@ export const KnowledgeBasePage: React.FC = () => {
         return '📝';
       case 'txt':
         return '📋';
+      case 'xlsx':
+        return '📊';
+      case 'xls':
+        return '📊';
       default:
         return '📄';
     }
@@ -296,6 +300,8 @@ export const KnowledgeBasePage: React.FC = () => {
               <option value="pdf">PDF</option>
               <option value="docx">DOCX</option>
               <option value="txt">TXT</option>
+              <option value="xlsx">XLSX</option>
+              <option value="xls">XLS</option>
             </select>
           </div>
 
@@ -483,6 +489,7 @@ export const KnowledgeBasePage: React.FC = () => {
               <li>• PDF documents (up to 10MB)</li>
               <li>• Word documents (.docx)</li>
               <li>• Plain text files (.txt)</li>
+              <li>• Excel spreadsheets (.xlsx, .xls)</li>
               <li>• Automatic text extraction and chunking</li>
             </ul>
           </div>

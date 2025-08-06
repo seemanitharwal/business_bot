@@ -36,6 +36,10 @@ export const DocumentViewModal: React.FC<DocumentViewModalProps> = ({
         return '📝';
       case 'txt':
         return '📋';
+      case 'xlsx':
+        return '📊';
+      case 'xls':
+        return '📊';
       default:
         return '📄';
     }

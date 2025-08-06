@@ -8,6 +8,7 @@ from app.models.document import (
     DocumentChunk, SearchResult, DocumentSearch
 )
 from app.services.openai_service import openai_service
+from app.services.excel_processor import excel_processor
 from app.database import get_database
 from bson import ObjectId
 import PyPDF2
@@ -61,10 +62,10 @@ class DocumentService:
             
             # Validate file type
             if not self._is_valid_file_type(file.filename):
-                logger.error(f"Invalid file type: {file.filename}")
+                logger.error(f"Invalid file type: {file.filename}, content_type: {file.content_type}")
                 raise HTTPException(
                     status_code=400,
-                    detail="Invalid file type. Only PDF, DOCX, and TXT files are allowed."
+                    detail="Invalid file type. Only PDF, DOCX, TXT, and Excel files (.xlsx, .xls) are allowed."
                 )
             
             # Check file size
@@ -151,34 +152,51 @@ class DocumentService:
             logger.info(f"Starting chunk processing for document {document_id}")
             db = get_database()
             
-            # Split content into chunks
-            chunks = self._split_into_chunks(content)
+            # Get document to check type
+            doc_data = await db.documents.find_one({"_id": ObjectId(document_id)})
+            if not doc_data:
+                raise ValueError(f"Document {document_id} not found")
+            
+            # Use Excel-specific chunking for Excel files
+            if doc_data.get("document_type") in ["xlsx", "xls"]:
+                chunk_data_list = excel_processor.create_excel_chunks(content, doc_data["file_name"])
+                chunks = [chunk_data["content"] for chunk_data in chunk_data_list]
+                chunk_metadata_list = [chunk_data["metadata"] for chunk_data in chunk_data_list]
+            else:
+                # Use standard chunking for other file types
+                chunks = self._split_into_chunks(content)
+                chunk_metadata_list = [{"chunk_type": "standard"} for _ in chunks]
+            
             logger.info(f"Document split into {len(chunks)} chunks")
             
             # Limit chunks to prevent excessive processing
             if len(chunks) > self.max_chunks_per_document:
                 chunks = chunks[:self.max_chunks_per_document]
+                chunk_metadata_list = chunk_metadata_list[:self.max_chunks_per_document]
                 logger.warning(f"Limited chunks to {self.max_chunks_per_document} for document {document_id}")
             
             # Generate embeddings for each chunk
             chunk_documents = []
-            for i, chunk_content in enumerate(chunks):
+            for i, (chunk_content, chunk_metadata) in enumerate(zip(chunks, chunk_metadata_list)):
                 if chunk_content.strip():  # Skip empty chunks
                     logger.info(f"Generating embedding for chunk {i+1}/{len(chunks)}")
                     embedding = await openai_service.generate_embedding(chunk_content)
                     
                     if embedding:  # Only add if embedding was generated successfully
+                        # Merge standard metadata with chunk-specific metadata
+                        combined_metadata = {
+                            "word_count": len(chunk_content.split()),
+                            "char_count": len(chunk_content),
+                            **chunk_metadata
+                        }
+                        
                         chunk_doc = {
                             "document_id": document_id,
                             "workspace_id": ObjectId(workspace_id),
                             "content": chunk_content,
                             "chunk_index": i,
                             "embedding": embedding,
-                            "metadata": {
-                                "word_count": len(chunk_content.split()),
-                                "char_count": len(chunk_content),
-                                "chunk_type": "text"
-                            },
+                            "metadata": combined_metadata,
                             "created_at": datetime.utcnow()
                         }
                         chunk_documents.append(chunk_doc)
@@ -547,6 +565,8 @@ class DocumentService:
                 return await self._extract_from_docx(file_path)
             elif filename.lower().endswith('.txt'):
                 return await self._extract_from_txt(file_path)
+            elif filename.lower().endswith(('.xlsx', '.xls')):
+                return await self._extract_from_excel(file_path, filename)
             else:
                 raise ValueError("Unsupported file type")
         finally:
@@ -593,9 +613,30 @@ class DocumentService:
             content = await f.read()
         return content.strip()
     
+    async def _extract_from_excel(self, file_path: str, filename: str) -> str:
+        """Extract text from Excel files"""
+        try:
+            # Validate Excel file first
+            is_valid, error_message = excel_processor.validate_excel_file(file_path, filename)
+            if not is_valid:
+                raise ValueError(error_message)
+            
+            # Process Excel file
+            content = await excel_processor.process_excel_file(file_path, filename)
+            
+            if not content or len(content.strip()) < 10:
+                raise ValueError("Excel file appears to be empty or contains no readable data")
+            
+            logger.info(f"Successfully extracted {len(content)} characters from Excel file {filename}")
+            return content
+            
+        except Exception as e:
+            logger.error(f"Excel extraction error for {filename}: {e}")
+            raise ValueError(f"Failed to process Excel file: {str(e)}")
+    
     def _is_valid_file_type(self, filename: str) -> bool:
         """Check if file type is valid"""
-        valid_extensions = ['.pdf', '.docx', '.txt']
+        valid_extensions = ['.pdf', '.docx', '.txt', '.xlsx', '.xls']
         return any(filename.lower().endswith(ext) for ext in valid_extensions)
     
     def _get_document_type(self, filename: str) -> DocumentType:
@@ -606,6 +647,10 @@ class DocumentService:
             return DocumentType.DOCX
         elif filename.lower().endswith('.txt'):
             return DocumentType.TXT
+        elif filename.lower().endswith('.xlsx'):
+            return DocumentType.XLSX
+        elif filename.lower().endswith('.xls'):
+            return DocumentType.XLS
         else:
             return DocumentType.TXT
 

@@ -102,9 +102,10 @@ async def upload_document(
     tags: Optional[str] = Form(None),  # Comma-separated tags
     current_user: User = Depends(get_current_active_user)
 ):
-    """Upload document to workspace"""
+    """Upload document to workspace (supports PDF, DOCX, TXT, XLSX, XLS)"""
     logger.info(f"Document upload request from user {current_user.id} for workspace {workspace_id}")
     logger.info(f"File details: {file.filename}, size: {file.size if hasattr(file, 'size') else 'unknown'}")
+    logger.info(f"File type: {file.content_type}")
     
     if not await verify_workspace_access(current_user, workspace_id):
         logger.warning(f"Access denied for user {current_user.id} to workspace {workspace_id}")

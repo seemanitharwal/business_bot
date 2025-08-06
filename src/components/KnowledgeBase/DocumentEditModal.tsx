@@ -94,6 +94,10 @@ export const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
         return '📝';
       case 'txt':
         return '📋';
+      case 'xlsx':
+        return '📊';
+      case 'xls':
+        return '📊';
       default:
         return '📄';
     }

@@ -7,6 +7,8 @@ class DocumentType(str, Enum):
     PDF = "pdf"
     DOCX = "docx"
     TXT = "txt"
+    XLSX = "xlsx"
+    XLS = "xls"
 
 class DocumentStatus(str, Enum):
     PROCESSING = "processing"
