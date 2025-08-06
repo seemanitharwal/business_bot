@@ -43,10 +43,11 @@ A comprehensive FastAPI backend system for WhatsApp automation with AI-powered c
    - Manual message sending when AI is disabled
 
 6. **Knowledge Base**
-   - Document upload (PDF, DOCX, TXT)
+   - Document upload (PDF, DOCX, TXT, Excel XLSX/XLS)
    - MongoDB Atlas Vector Search integration
    - OpenAI embedding model for processing
    - RAG (Retrieval Augmented Generation) implementation
+   - Excel-specific processing with worksheet and table structure preservation
 
 ## Installation
 
